@@ -43,7 +43,7 @@
       </el-form>
     </el-col>
     <el-col :span="14">
-      <Edit></Edit>
+      <Edit :id="`edit${index}`" v-for="(item, index) in list.codes" :code="item.saveFileBuffer"></Edit>
     </el-col>
   </el-row>
 
@@ -101,6 +101,10 @@ const form = reactive({
 }
 )
 
+const list = reactive({
+  codes: []
+})
+
 const onSubmit = () => {
   main(form)
 }
@@ -128,7 +132,7 @@ const generatorFileList = (data: Array<any>, project: ProjectConfig) => {
 
     const FileName = getApiFileName(item, hasSaveNames)
     const savePath = getSavePath(FileName, project, fileConfig, nameChunk)
-    console.log(savePath, saveFileBuffer)
+    list.codes.push({ savePath, saveFileBuffer })
   })
 }
 

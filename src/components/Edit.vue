@@ -25,11 +25,17 @@ self.MonacoEnvironment = {
   }
 }
 
+const props = defineProps({
+  id: { type: String, required: true },
+  code: { type: String, required: true },
+  type: {type: String, default: 'javascript'}
+})
+
 
 const showEdit = () => {
-  monaco.editor.create(document.getElementById('edit'), {
-    value: "function hello() {\n\talert('Hello world!');\n}",
-    language: 'javascript'
+  monaco.editor.create(document.getElementById(props.id), {
+    value: props.code,
+    language: props.type
   })
 }
 
@@ -38,12 +44,13 @@ onMounted(showEdit)
 </script>
 
 <template>
-  <div id="edit"></div>
+  <div :id="props.id" class="edit-wrap"></div>
 </template>
 
 
 <style scoped lang="scss">
-#edit {
+
+.edit-wrap {
   width: 100%;
   height: 100vh;
 }
