@@ -6,9 +6,9 @@ interface CustomParam {
 
 interface CatConfig {
   catId: number | string
+  name: string
   fileName?: string
   outputDir?: string
-  name: string
 }
 
 declare interface ProjectBaseConfig {
@@ -39,6 +39,7 @@ declare interface ProjectBaseConfig {
 
 
 interface ProjectConfig {
+  data?: Array<any>,
   projectId: number | string,
   outputDir: string,
   isLoadFullApi: boolean
@@ -55,7 +56,7 @@ interface ProjectConfig {
 interface ApiConfig {
   yapiURL: string
   token?: string
-  userId?: string
+  userId?: string | number
   version: string
   isNeedType: boolean
   isNeedAxiosType?: boolean

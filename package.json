@@ -8,7 +8,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@highlightjs/vue-plugin": "^2.1.0",
     "element-plus": "^2.2.4",
+    "highlight.js": "^11.5.1",
     "monaco-editor": "^0.33.0",
     "normalize.css": "^8.0.1",
     "vue": "^3.2.25"

@@ -39,12 +39,13 @@ const showEdit = () => {
   })
 }
 
-onMounted(showEdit)
+// onMounted(showEdit)
 
 </script>
 
 <template>
-  <div :id="props.id" class="edit-wrap"></div>
+  <!-- <div :id="props.id" class="edit-wrap"></div> -->
+  <highlightjs autodetect :code="props.code" />
 </template>
 
 
