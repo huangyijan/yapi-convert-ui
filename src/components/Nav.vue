@@ -3,42 +3,47 @@ import { ref } from 'vue'
 import {
   Document,
   Menu as IconMenu,
-  Setting,
+  List,
 } from '@element-plus/icons-vue'
 
 
-const handleOpen = (key: string, keyPath: string[]) => {
-  console.log(key, keyPath)
-}
-const handleClose = (key: string, keyPath: string[]) => {
-  console.log(key, keyPath)
+const handleOpen = (index: string) => {
+  const pageIndex = Number(index)
+  if(pageIndex === 1) return
+  let codeUrl = 'http://github.miguatech.com/huangyijian/aomi-yapi-convert'
+   if(pageIndex === 2)   codeUrl += '/blob/master/.todo'
+   window.open(codeUrl, 'blank')
 }
 </script>
 
 <template>
 
-  <el-menu active-text-color="#ffd04b" background-color="#545c64" default-active="2" mode="horizontal" text-color="#fff" @open="handleOpen" @close="handleClose">
-    <el-menu-item index="2">
+  <el-menu active-text-color="#ffd04b" @select="handleOpen" background-color="#545c64" default-active="1" mode="horizontal" text-color="#fff" class="top-menu">
+    <el-menu-item index="1">
       <el-icon>
         <icon-menu />
       </el-icon>
       <span>基础功能</span>
     </el-menu-item>
-    <el-menu-item index="3">
+    <el-menu-item index="2">
       <el-icon>
-        <document />
+        <List />
       </el-icon>
       <span>TODO</span>
     </el-menu-item>
-    <el-menu-item index="4">
+    <el-menu-item index="3">
       <el-icon>
-        <setting />
+        <document />
+
       </el-icon>
-      <span>github 地址</span>
+      <span>代码地址</span>
     </el-menu-item>
   </el-menu>
 </template>
 
 
 <style scoped lang="scss">
+.top-menu {
+  width: 100vw;
+}
 </style>

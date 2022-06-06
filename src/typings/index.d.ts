@@ -40,6 +40,7 @@ declare interface ProjectBaseConfig {
 
 interface ProjectConfig {
   data?: Array<any>,
+  menus?: Array<any>,
   projectId: number | string,
   outputDir: string,
   isLoadFullApi: boolean

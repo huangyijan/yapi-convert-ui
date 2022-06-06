@@ -44,15 +44,20 @@ const showEdit = () => {
 </script>
 
 <template>
+<div class="edit-container">
   <!-- <div :id="props.id" class="edit-wrap"></div> -->
-  <highlightjs autodetect :code="props.code" />
+  <highlightjs autodetect :code="props.code" class="code-read"/>
+</div>
 </template>
 
 
 <style scoped lang="scss">
 
-.edit-wrap {
-  width: 100%;
-  height: 100vh;
+.edit-container {
+  .code-read {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
 }
 </style>

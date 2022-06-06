@@ -1,3 +1,5 @@
+import {  ElMessage } from 'element-plus'
+
 /** 获取通用请求头 */
 export const getHeader = () => {
     const config = window.global.apiConfig
@@ -34,4 +36,5 @@ export const handleApiRequestError = (error: string) => {
     } else {
         console.log(error)
     }
+    ElMessage.error(error)
 }

@@ -1,6 +1,6 @@
 <template>
-  <el-row>
-    <el-col :span="6" class="config-form">
+  <el-row class="main-row">
+    <el-col :span="11" class="config-form">
       <el-form :model="form" label-width="120px">
         <el-form-item label="yapi token">
           <el-input v-model="form.token" type="textarea" :rows="4" />
@@ -18,10 +18,10 @@
           <el-input v-model="form.axiosName" @blur="formUpdate" placeholder="默认是: fetch" />
         </el-form-item>
         <el-form-item label="服务端类型提示">
-          <el-switch v-model="form.isNeedType" active-color="#13ce66" inactive-color="#ff4949" @change="formUpdate" />
+          <el-switch v-model="form.isNeedType" @change="formUpdate" />
         </el-form-item>
         <el-form-item label="axios参数提示">
-          <el-switch v-model="form.isNeedAxiosType" active-color="#13ce66" inactive-color="#ff4949" @change="formUpdate" />
+          <el-switch v-model="form.isNeedAxiosType" @change="formUpdate" />
         </el-form-item>
         <el-form-item label="文档类型">
           <el-select v-model="form.version" placeholder="请选择导出文件风格" @change="formUpdate">
@@ -36,22 +36,61 @@
             <el-option label="匿名导出" value="anonymous" />
           </el-select>
         </el-form-item>
+        <el-form-item label="项目信息">
+          <el-table :data="form.projects" @expand-change="expandChange" :row-key="row => row.projectId" :expand-row-keys="list.expandRow" style="width: 100%" v-loading="list.loading">
+            <el-table-column type="expand">
+              <template #default="scope">
+                <el-checkbox class="menu-checkbox" v-for="menu in scope.row.menus" :key="menu.catId" :label="menu" :checked="!!scope.row.group.find(item => item.catId === menu.catId)"
+                  @change="checkStatus => menuChange(checkStatus, menu, scope.row)">{{
+                  menu.name
+                  }}</el-checkbox>
+              </template>
+            </el-table-column>
+            <el-table-column label="项目ID">
+              <template #default="scope">
+                <el-input type="number" size="small" v-model="scope.row.projectId" @blur="initMenu" />
+              </template>
+            </el-table-column>
+            <el-table-column label="导出路径">
+              <template #default="scope">
+                <el-input size="small" v-model="scope.row.outputDir" />
+              </template>
+            </el-table-column>
+            <el-table-column label="baseURL">
+              <template #default="scope">
+                <el-input size="small" v-model="scope.row.prefix" />
+              </template>
+            </el-table-column>
+            <el-table-column label="全量加载">
+              <template #default="scope">
+                <el-switch size="small" v-model="scope.row.isLoadFullApi" @change="formUpdate(); initMenu()" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作">
+              <template #default="scope">
+                <el-button size="small" type="danger" @click="handleRemoveProject(scope.$index)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-button class="add-project" @click="addProject">添加项目</el-button>
+        </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="onSubmit">加载API文件</el-button>
+          <el-button type="primary" @click="main">加载API文件</el-button>
+          <el-button type="success" @click="copy">复制配置文件</el-button>
         </el-form-item>
       </el-form>
     </el-col>
-    <el-col :span="18" class="code-wrap">
-      <el-collapse v-model="activeNames" @change="handleChange" v-for="(item, index) in list.codes">
-        <el-collapse-item :title="`目标输出路径：${item.savePath}`" :name="index">
+    <Arrow/>
+     <el-col :span="12" class="code-wrap">
+      <el-collapse v-model="activeNames" v-for="(item, index) in list.codes" class="code-collapse">
+        <el-collapse-item :title="`API输出路径：${item.savePath}`" :name="index">
           <div>
             <Edit :id="`edit${index}`" :code="item.saveFileBuffer"></Edit>
           </div>
         </el-collapse-item>
       </el-collapse>
-
-    </el-col>
+      </el-col>
   </el-row>
 
 </template>
@@ -61,67 +100,20 @@ import { onMounted, reactive, ref } from 'vue'
 import { request, handleApiRequestError } from '../utils/request'
 import { generatorFileCode, getApiFileName, getSavePath } from 'aomi-yapi'
 import Edit from './Edit.vue'
-import demo from '../../static/demo.json'
-
+import Arrow from './Arrow.vue'
+import { config, baseUrl } from '../utils/constants'
 import { ElLoading, ElMessage } from 'element-plus'
+import { copyConfig, registerGlobal } from '../utils'
 
-const form: ApiConfig = reactive({
-  userId: 466,
-  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjQ2NiwiaWF0IjoxNjU0NDE3MzM1LCJleHAiOjE2NTUwMjIxMzV9.hfllQdMiez0-S95PABCkUDBZfnNQD9T4B-ryd_Avn98",
-  yapiURL: 'http://yapi.miguatech.com/project/445/interface/api',
-  version: 'ts',
-  isNeedType: true,
-  axiosFrom: 'import { fetch } from \'@/service/fetch/index\'',
-  protocol: 'http:',
-  axiosName: '',
-  host: 'api.mbiquwu.co',
-  isNeedAxiosType: true,
-  outputStyle: 'defaultExport',
-  projects: [
-    {
-      data: demo,
-      projectId: '445',
-      outputDir: 'src/api',
-      isLoadFullApi: false,
-      prefix: '/aomi-market-admin-server',
-      group: [
-        {
-          catId: 13540,
-          name: '预售活动'
-        },
-        {
-          catId: 14303,
-          name: '拼团活动',
-          fileName: 'index',
-          outputDir: 'src/api/group'
-        },
-        {
-          catId: 15157,
-          name: '搜索词'
-        }
-      ] as Array<CatConfig>
-    },
-  ]
-}
-)
-
-
-
+const form: ApiConfig = reactive(config)
 const list = reactive({
-  codes: []
+  codes: [],
+  loading: false,
+  expandRow: []
 })
+const activeNames = ref([0])
 
-const onSubmit = () => {
-  main(form)
-}
 
-/**
- * 注册全局变量，node环境注册global里面的对象，browser环境注册global 到window对象
- * @param config 配置项
- */
-const registerGlobal = (config: ApiConfig) => {
-  window.global = { apiConfig: config } as any // 浏览器注册全局变量
-}
 
 /** 生成没有注释的API文件，注释有文档链接，可以直接跳转 */
 const generatorFileList = (project: ProjectConfig) => {
@@ -142,10 +134,11 @@ const generatorFileList = (project: ProjectConfig) => {
   })
 }
 
-const main = async (config: ApiConfig) => {
+/** 根据配置网络请求加载api列表 */
+const main = async () => {
+  const config = form
   registerGlobal(config)
-  const { protocol, host, projects } = config
-  const baseUrl = `${protocol}//${host}`
+  const { projects } = config
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
@@ -176,33 +169,129 @@ const main = async (config: ApiConfig) => {
   })
 }
 
-const activeNames = ref([0])
 
-const handleChange = (val: string[]) => {
-  console.log(val)
+/** 删除项目 */
+const handleRemoveProject = (index: number) => {
+  form.projects.splice(index, 1)
 }
 
+/** 展开行处理 */
+const expandChange = (row: ProjectConfig) => {
+  const isExpand = list.expandRow.findIndex(projectId => projectId === row.projectId)
+  if (isExpand > -1) {
+    return list.expandRow.splice(isExpand, 1)
+  }
+  row.isLoadFullApi = false
+  list.expandRow.push(row.projectId)
+  initMenu()
+}
+
+/** 拷贝配置 */
+const copy = () => {
+  const config = JSON.parse(JSON.stringify(form)) 
+  config.projects.forEach(item => {
+    delete item.data
+    delete item.menus
+    delete item.token
+    delete item.userId
+  })
+  copyConfig(JSON.stringify(config))
+}
+
+/** 二级菜单变化 */
+const menuChange = (value: boolean, menu: CatConfig, project: ProjectConfig) => {
+  if (value) {
+    project.group.push(menu)
+  } else {
+    const index = project.group.findIndex(item => item.catId === menu.catId)
+    if (index > -1) project.group.splice(index, 1)
+  }
+  list.codes = []
+  generatorFileList(project)
+}
+
+/** 添加项目 */
+const addProject = () => {
+  form.projects.push({
+    projectId: '',
+    outputDir: '',
+    isLoadFullApi: true,
+    prefix: '',
+    group: []
+  })
+}
+
+/** 更新表单 */
 const formUpdate = () => {
   list.codes = []
   form.projects.forEach(project => {
     generatorFileList(project)
+  })
+}
 
+/** 加载form表单 */
+const initMenu = () => {
+  form.projects.forEach(project => {
+    if (project.isLoadFullApi) return
+    list.expandRow.push(project.projectId)
+    list.loading = true
+    const MenuUrl = `${baseUrl}/api/interface/list_menu?project_id=${project.projectId}`
+    request(MenuUrl).then(menuStr => {
+      const { data } = JSON.parse(menuStr)
+      project.menus = data.map(item => {
+        return { catId: item._id, name: item.name }
+      })
+      list.loading = false
+
+    })
+      .catch(err => {
+        ElMessage.error(err.toString())
+      })
   })
 }
 
 onMounted(() => {
   registerGlobal(form)
+
+  initMenu()
   generatorFileList(form.projects[0])
 })
 
 </script>
 
 <style scoped lang="scss">
-.config-form {
-  padding: 10px 0;
-}
+.main-row {
+  width: 100vw;
+  height: calc(100vh - 60px);
 
-.code-wrap {
-  padding: 0 10px;
+  .config-form {
+    padding: 10px 0;
+    height: 100%;
+    overflow: auto;
+
+    .group-tag {
+      margin-right: 10px;
+    }
+
+    .add-project {
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    .menu-checkbox {
+      width: 150px;
+    }
+  }
+
+
+  .code-wrap {
+    padding: 10px;
+    height: 100%;
+    overflow: auto;
+
+    .code-collapse {
+      width: 95%;
+    }
+  }
 }
 </style>
