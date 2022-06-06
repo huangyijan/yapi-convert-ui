@@ -17,7 +17,7 @@ export const config = {
       data: demo,
       projectId: '445',
       outputDir: 'src/api',
-      isLoadFullApi: true,
+      isLoadFullApi: false,
       prefix: '/aomi-market-admin-server',
       group: [
         {

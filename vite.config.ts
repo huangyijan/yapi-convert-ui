@@ -7,7 +7,7 @@ import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
+  plugins: [ 
     vue(),
     AutoImport({
       resolvers: [ElementPlusResolver()],
@@ -15,10 +15,5 @@ export default defineConfig({
     Components({
       resolvers: [ElementPlusResolver()],
     }),
-  ],
-  resolve: {
-    alias: {
-      "aomi-yapi": resolve(__dirname, "static/aomi-yapi.js") 
-    }
-  }
+  ]
 })

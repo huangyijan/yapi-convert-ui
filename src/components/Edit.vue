@@ -1,63 +1,35 @@
 <script setup lang="ts">
-import * as monaco from 'monaco-editor'
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
-import { onMounted } from 'vue'
-
-self.MonacoEnvironment = {
-  getWorker(_, label) {
-    if (label === 'json') {
-      return new jsonWorker()
-    }
-    if (label === 'css' || label === 'scss' || label === 'less') {
-      return new cssWorker()
-    }
-    if (label === 'html' || label === 'handlebars' || label === 'razor') {
-      return new htmlWorker()
-    }
-    if (label === 'typescript' || label === 'javascript') {
-      return new tsWorker()
-    }
-    return new editorWorker()
-  }
-}
 
 const props = defineProps({
   id: { type: String, required: true },
   code: { type: String, required: true },
-  type: {type: String, default: 'javascript'}
+  type: { type: String, default: 'javascript' }
 })
 
 
-const showEdit = () => {
-  monaco.editor.create(document.getElementById(props.id), {
-    value: props.code,
-    language: props.type
-  })
-}
-
-// onMounted(showEdit)
 
 </script>
 
 <template>
-<div class="edit-container">
-  <!-- <div :id="props.id" class="edit-wrap"></div> -->
-  <highlightjs autodetect :code="props.code" class="code-read"/>
-</div>
+  <div class="edit-container">
+    <highlightjs autodetect :code="props.code" class="code-read" />
+  </div>
 </template>
 
 
 <style scoped lang="scss">
+
 
 .edit-container {
   .code-read {
     width: 100%;
     position: relative;
     overflow: hidden;
+    margin: 0;
   }
+    .edit-wrap {
+      width: 100%;
+      min-height: 800px;
+    }
 }
 </style>

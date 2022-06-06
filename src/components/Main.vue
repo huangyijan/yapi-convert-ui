@@ -81,16 +81,33 @@
         </el-form-item>
       </el-form>
     </el-col>
-    <Arrow/>
-     <el-col :span="12" class="code-wrap">
+    <Arrow />
+    <el-col :span="12" class="code-wrap">
       <el-collapse v-model="activeNames" v-for="(item, index) in list.codes" class="code-collapse">
-        <el-collapse-item :title="`API输出路径：${item.savePath}`" :name="index">
+        <el-collapse-item :name="index">
+          <template #title>
+            <div class="title-collapse">
+              <div>
+                <el-icon class="header-icon" :size="20">
+                  <Folder />
+                </el-icon>&nbsp;API输出路径：{{ item.savePath}}
+              </div>
+              <el-icon class="edit-icon" :size="20" @click.stop="editChange(item, index)">
+                <IconEdit />
+              </el-icon>
+            </div>
+
+          </template>
           <div>
-            <Edit :id="`edit${index}`" :code="item.saveFileBuffer"></Edit>
+            <Edit :id="`edit${index}`" ref="getEdit" :code="item.saveFileBuffer"></Edit>
           </div>
         </el-collapse-item>
       </el-collapse>
-      </el-col>
+    </el-col>
+
+    <el-drawer :with-header="false" destroy-on-close v-model="list.showCode"  direction="rtl" size="70%">
+      <Code id="codeWrap" :code="list.item.saveFileBuffer"></Code>
+    </el-drawer>
   </el-row>
 
 </template>
@@ -98,22 +115,31 @@
 <script lang="ts" setup>
 import { onMounted, reactive, ref } from 'vue'
 import { request, handleApiRequestError } from '../utils/request'
-import { generatorFileCode, getApiFileName, getSavePath } from 'aomi-yapi'
+import { generatorFileCode, getApiFileName, getSavePath } from '../assets/aomi-yapi.js'
 import Edit from './Edit.vue'
+import Code from './Code.vue'
 import Arrow from './Arrow.vue'
 import { config, baseUrl } from '../utils/constants'
 import { ElLoading, ElMessage } from 'element-plus'
 import { copyConfig, registerGlobal } from '../utils'
-
+import {
+  Folder, Edit as IconEdit
+} from '@element-plus/icons-vue'
 const form: ApiConfig = reactive(config)
 const list = reactive({
   codes: [],
+  item: {} as any,
+  showCode: false,
   loading: false,
   expandRow: []
 })
 const activeNames = ref([0])
 
-
+const editChange = (item, index) => {
+  list.item = item
+  list.showCode = !list.showCode
+  
+}
 
 /** 生成没有注释的API文件，注释有文档链接，可以直接跳转 */
 const generatorFileList = (project: ProjectConfig) => {
@@ -260,6 +286,8 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+
+
 .main-row {
   width: 100vw;
   height: calc(100vh - 60px);
@@ -288,7 +316,19 @@ onMounted(() => {
     padding: 10px;
     height: 100%;
     overflow: auto;
-
+    .title-collapse {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      div:nth-child(1) {
+        display: flex;
+        align-items: center;
+      }
+      .edit-icon {
+        margin-right: 10px;
+      }
+    }
     .code-collapse {
       width: 95%;
     }
