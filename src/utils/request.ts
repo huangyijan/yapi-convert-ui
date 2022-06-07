@@ -1,3 +1,4 @@
+import { rejects } from 'assert'
 import {  ElMessage } from 'element-plus'
 
 /** 获取通用请求头 */
@@ -14,7 +15,7 @@ export const getHeader = () => {
 
 
 export const request = (url: string, method = 'post') => {
-    return new Promise<string>((resolve) => {
+    return new Promise<string>((resolve, rejects) => {
         const http = new XMLHttpRequest()
 
         http.open(method, url, true)
@@ -24,6 +25,8 @@ export const request = (url: string, method = 'post') => {
             if (http.readyState == 4 && http.status == 200) {
                 resolve(http.responseText)
             } 
+            console.log(http.status);
+            if(http.status === 0) rejects(http.responseText)
         }
         const headerBody = JSON.stringify(getHeader())
         http.send(headerBody)

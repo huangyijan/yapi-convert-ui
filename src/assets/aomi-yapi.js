@@ -1,56 +1,3 @@
-/*! *****************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-}
-
-function __generator(thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-}
-
 /* eslint-disable no-useless-escape */
 var ApiNameRegex = /[\/|\-|_|{|}]+([a-zA-Z])/g; // 獲取接口名稱
 var illegalRegex = /[^a-zA-Z0-9]/g; // 用来剔除不合法的符号
@@ -124,17 +71,6 @@ var getLegalJson = function (reqBody) {
         // console.log('json序列化错误', error) // 正则如果没有考虑所有情况将会影响无法输出注释, TODO
         return ''; // 总有一些意外的情况没有考虑到，当字符创处理
     }
-};
-/** 获取通用请求头 */
-var getHeader = function () {
-    var config = global.apiConfig;
-    var token = config.token;
-    var userId = config.userId;
-    var HeaderConfig = {
-        Cookie: "_yapi_token=".concat(token, "; _yapi_uid=").concat(userId),
-        Accept: 'application/json, text/plain, */*'
-    };
-    return HeaderConfig;
 };
 
 /** 后台类型转前端类型 */
@@ -394,7 +330,9 @@ var dealResponseData = function (res) {
     return { res: res, isArray: isArray };
 };
 /** 获取文档地址 */
-var getApiLinkAddress = function (baseUrl, project_id, _id) {
+var getApiLinkAddress = function (project_id, _id) {
+    var _a = global.apiConfig, protocol = _a.protocol, host = _a.host;
+    var baseUrl = "".concat(protocol, "//").concat(host);
     return "".concat(baseUrl, "/project/").concat(project_id, "/interface/api/").concat(_id);
 };
 /** 获取api最后更新时间 */
@@ -414,9 +352,7 @@ var getAxiosOptionTypeName = function () {
 
 /** 配置注释 */
 var getNoteStringItem$3 = function (item) {
-    var _a = global.apiConfig, protocol = _a.protocol, host = _a.host;
-    var project_id = item.project_id;
-    return "\n /**\n   * @description ".concat(item.title).concat(getAxiosType(), "\n   * @apiUpdateTime ").concat(new Date(item.up_time * 1000).toLocaleDateString(), "\n   * @link ").concat(protocol, "//").concat(host, "/project/").concat(project_id, "/interface/api/").concat(item._id, "\n   */");
+    return "\n /**\n   * @description ".concat(item.title).concat(getAxiosType(), "\n   * @apiUpdateTime ").concat(new Date(item.up_time * 1000).toLocaleDateString(), "\n   * @link  ").concat(getApiLinkAddress(item.project_id, item._id), "\n   */");
 };
 /** 配置请求主方法 */
 var getMainMethodItem$3 = function (item, project) {
@@ -681,7 +617,7 @@ var getNoteStringItem$1 = function (item, project) {
     var _a = getRequestNoteStringItem$1(item, project), reqType = _a.reqType, typeName = _a.typeName;
     var _b = getReturnNoteStringItem$1(item), resType = _b.resType, returnNameWithType = _b.returnNameWithType;
     var idNote = getAppendIdNote(item.req_params);
-    var methodNote = "\n  /**\n   * @description ".concat(item.title).concat(idNote).concat(getNoteParams(reqType, typeName, hasParamsQuery)).concat(getAxiosType(), "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress('http://yapi.miguatech.com', item.project_id, item._id), "\n   * @return { Promise<").concat(getReturnType(returnNameWithType, resType), "> }\n   */");
+    var methodNote = "\n  /**\n   * @description ".concat(item.title).concat(idNote).concat(getNoteParams(reqType, typeName, hasParamsQuery)).concat(getAxiosType(), "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress(item.project_id, item._id), "\n   * @return { Promise<").concat(getReturnType(returnNameWithType, resType), "> }\n   */");
     return { methodNote: methodNote, typeName: typeName, reqType: reqType, resType: resType };
 };
 /** 配置请求主方法 */
@@ -805,7 +741,7 @@ var getParamsTypeName = function (reqType, typeName) {
 };
 /** 配置请求注释 */
 var getNoteStringItem = function (item) {
-    return "\n  /**\n   * @description ".concat(item.title, "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress('http://yapi.miguatech.com', item.project_id, item._id), "\n   */");
+    return "\n  /**\n   * @description ".concat(item.title, "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress(item.project_id, item._id), "\n   */");
 };
 /**
  * 处理传Id的API请求参数
@@ -845,12 +781,14 @@ var handleTsTypeFileString = function (fileBufferStringChunk, item, project, not
 };
 
 /** 设置api文件头部文件 */
-var getHeaderInfo = function () {
+var getHeaderInfo = function (item) {
     var config = global.apiConfig;
     var axiosFrom = Object.prototype.hasOwnProperty.call(config, 'axiosFrom') ? config.axiosFrom : 'import fetch from \'axios\'';
     var tsHeader = config.version === 'ts' ? '\n// @ts-nocheck' : '';
     var axiosType = getTsHeaderAxiosType(config);
-    return "\n/* eslint-disable */".concat(tsHeader, "\n/**\n * @file \u8BE5\u6587\u4EF6\u7531aomi-yapi-convert\u81EA\u52A8\u751F\u6210\uFF0C\u8BF7\u4E0D\u8981\u6539\u52A8\u8FD9\u4E2A\u6587\u4EF6\u3002\n * @docUpdateTime ").concat(new Date().toLocaleDateString(), "\n */\n\n").concat(axiosType).concat(axiosFrom, "\n    ");
+    var menuItem = item.list.find(function (item) { return !!item; });
+    var menuLink = menuItem ? getApiLinkAddress(menuItem.project_id, "cat_".concat(menuItem.catid)) : '';
+    return "\n/* eslint-disable */".concat(tsHeader, "\n/**\n * @description ").concat(item.name, "\n * @file \u8BE5\u6587\u4EF6\u7531aomi-yapi-convert\u81EA\u52A8\u751F\u6210\uFF0C\u8BF7\u4E0D\u8981\u624B\u52A8\u6539\u52A8\u8FD9\u4E2A\u6587\u4EF6, \u53EF\u80FD\u4F1A\u88AB\u63D2\u4EF6\u66F4\u65B0\u8986\u76D6\n * @docUpdateTime ").concat(new Date().toLocaleDateString(), "\n * @link ").concat(menuLink, "\n */\n\n").concat(axiosType).concat(axiosFrom, "\n    ");
 };
 /** ts文件顶部配置通用的axios config Type */
 var getTsHeaderAxiosType = function (config) {
@@ -877,9 +815,9 @@ var OutputStyle;
     OutputStyle["Anonymous"] = "anonymous";
 })(OutputStyle || (OutputStyle = {}));
 /** 配置文件头部 */
-var configFileHead = function () {
+var configFileHead = function (item) {
     var fileBufferStringChunk = [];
-    fileBufferStringChunk.push(getHeaderInfo());
+    fileBufferStringChunk.push(getHeaderInfo(item));
     var _a = global.apiConfig.outputStyle, outputStyle = _a === void 0 ? OutputStyle.Default : _a;
     if (outputStyle !== OutputStyle.Default)
         return fileBufferStringChunk;
@@ -956,7 +894,7 @@ var getMaxTimesObjectKeyName = function (obj, hasSaveNames) {
 var getApiFileConfig = function (item, project) {
     var list = item.list;
     var isNeedType = global.apiConfig.isNeedType;
-    var fileBufferStringChunk = configFileHead(); // 单个API文件流
+    var fileBufferStringChunk = configFileHead(item); // 单个API文件流
     var noteStringChunk = ['\n']; // 存储Jsdoc注释的容器
     list.forEach(function (item) {
         if (project.hideUnDoneApi && item.status === 'undone')
@@ -1002,64 +940,6 @@ var getApiFileName = function (item, hasSaveNames) {
     return FileName;
 };
 
-var request = function (url, method) {
-    if (method === void 0) { method = 'post'; }
-    return new Promise(function (resolve) {
-        var http = new XMLHttpRequest();
-        http.open(method, url, true);
-        http.onreadystatechange = function () {
-            if (http.readyState == 4 && http.status == 200) {
-                resolve(http.responseText);
-            }
-        };
-        var headerBody = JSON.stringify(getHeader());
-        http.send(headerBody);
-    });
-};
-var handleApiRequestError = function (error) {
-    if (error.includes('40011')) {
-        console.log('\n\x1b[33m', 'token 已经过期， 请从yapi文档获取最新token');
-    }
-    else {
-        console.log(error);
-    }
-};
-
-/**
- * 注册全局变量，node环境注册global里面的对象，browser环境注册global 到window对象
- * @param config 配置项
- */
-var registerGlobal = function (config) {
-    window.global = { apiConfig: config }; // 浏览器注册全局变量
-};
-/** 主流程：获取项目配置 => 获取接口json => 生成接口文档 */
-var index = (function (config) { return __awaiter(void 0, void 0, void 0, function () {
-    var protocol, host, projects, baseUrl;
-    return __generator(this, function (_a) {
-        registerGlobal(config);
-        protocol = config.protocol, host = config.host, projects = config.projects;
-        baseUrl = "".concat(protocol, "//").concat(host);
-        projects.forEach(function (project) {
-            var projectId = project.projectId;
-            var projectConfigUrl = "".concat(baseUrl, "/api/project/get?id=").concat(projectId);
-            request(projectConfigUrl)
-                .then(function (projectConfigStr) {
-                var projectConfig = JSON.parse(projectConfigStr);
-                project.projectBaseConfig = projectConfig.data;
-                project.requestUrl = "".concat(baseUrl, "/api/plugin/export?type=json&pid=").concat(projectId, "&status=all&isWiki=false"); // jsonUrl
-                return request(project.requestUrl);
-            })
-                .then(function (fileString) {
-                var commonJson = JSON.parse(fileString);
-                generatorFileList(commonJson, project);
-            })
-                .catch(function (error) {
-                handleApiRequestError(String(error));
-            });
-        });
-        return [2 /*return*/];
-    });
-}); });
 /** 生成没有注释的API文件，注释有文档链接，可以直接跳转 */
 var generatorFileList = function (data, project) {
     var nameChunk = new Map(); // 用来处理文件命名的容器
@@ -1080,4 +960,4 @@ var generatorFileList = function (data, project) {
     });
 };
 
-export { index as default, generatorFileCode, generatorFileList, getApiFileName, getSavePath };
+export { generatorFileCode, generatorFileList, getApiFileName, getSavePath };

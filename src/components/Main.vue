@@ -188,6 +188,7 @@ const main = async () => {
         generatorFileList(project)
       })
       .catch(error => {
+        loading.close()
         ElMessage.error(error.toString())
         handleApiRequestError(String(error))
       })

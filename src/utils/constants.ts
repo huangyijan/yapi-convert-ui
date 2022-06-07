@@ -23,16 +23,6 @@ export const config = {
         {
           catId: 13540,
           name: '预售活动'
-        },
-        {
-          catId: 14303,
-          name: '拼团活动',
-          fileName: 'index',
-          outputDir: 'src/api/group'
-        },
-        {
-          catId: 15157,
-          name: '搜索词'
         }
       ] as Array<CatConfig>
     },
