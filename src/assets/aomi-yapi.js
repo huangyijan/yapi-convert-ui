@@ -177,6 +177,37 @@ var format = function (lines, tabSize) {
     return codeString;
 };
 
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+    if (typeof b !== "function" && b !== null)
+        throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
 /** 获取处理地址的baseUrl */
 var getApiBaseUrl = function (project) {
     var baseUrl = '';
@@ -197,18 +228,6 @@ var getApiName = function (path, method) {
     path = path.replace(ApiNameRegex, function (_, item) { return item.toUpperCase(); });
     // 防止restful API 导致命名相同
     return method.toLowerCase() + path.replace(illegalRegex, '');
-};
-/**
- * 处理传Id的API请求参数
- * @param path 请求路径
- * @param paramsName 传输使用的参数名，配合JsDoc文档数据
- * @returns {string} 函数请求使用的参数表达式
- */
-var getAppendRequestParamsJsdoc = function (path, paramsName, hasNoteData, project) {
-    var requestParams = '';
-    path.replace(pathHasParamsRegex, function (_, p1) { return requestParams += "".concat(p1, ", "); });
-    requestParams = "(".concat(requestParams).concat(hasNoteData ? "".concat(paramsName, ", ") : '', "options").concat(getCustomerParamsStr(project), ")");
-    return requestParams;
 };
 /** 首字母大写 */
 var getUpperCaseName = function (name) {
@@ -280,11 +299,20 @@ var getAxiosName = function () {
     var axiosName = global.apiConfig.axiosName;
     return axiosName || 'fetch';
 };
+/**
+ * 根据导出类型获取单个请求的method字符串
+ * @param project 项目配置
+ * @param item 请求配置
+ * @param requestParamsStr 请求参数字符串
+ * @param appendParamsStr method使用的额外的参数字符串
+ * @param returnType 服务端返回的类型或类型名
+ * @returns string 主方法字符串
+ */
 var getMainRequestMethodStr = function (project, item, requestParamsStr, appendParamsStr, returnType) {
     if (appendParamsStr === void 0) { appendParamsStr = ''; }
     var requestPath = getAppendPath(item.path, project);
     var requestName = getApiName(item.path, item.method);
-    var returnTypeStr = returnType ? ": Promise<".concat(returnType, ">") : '';
+    var returnTypeStr = global.apiConfig.isNeedType && returnType ? ": Promise<".concat(returnType, ">") : '';
     var _a = global.apiConfig.outputStyle, outputStyle = _a === void 0 ? OutputStyle.Default : _a;
     var requestContent = "{\n      const method = '".concat(item.method, "'\n      return ").concat(getAxiosName(), "(").concat(requestPath, ", { ").concat(appendParamsStr, "method, ...options }").concat(getCustomerParamsStr(project, false), ")\n   }");
     switch (outputStyle) {
@@ -295,107 +323,6 @@ var getMainRequestMethodStr = function (project, item, requestParamsStr, appendP
         default:
             return " ".concat(requestName, ": ").concat(requestParamsStr).concat(returnTypeStr, " => ").concat(requestContent, ",");
     }
-};
-
-/** 获取传参名称 */
-var getNoteNameByParamsType = function (item, project, hasParamsQuery) {
-    var requestName = getApiName(item.path, item.method);
-    var ParamsName = getUpperCaseName(requestName);
-    return ParamsName + (hasParamsQuery ? 'Params' : 'Data');
-};
-/** 获取放在Promise<xxx>的名字 */
-var getReturnType = function (returnName, resType) {
-    if (returnName === 'array')
-        return '[]';
-    return resType ? returnName : 'any';
-};
-/** 获取返回的参数名 */
-var getReturnName = function (requestName, value) {
-    var returnName = requestName + 'Response';
-    var type = getTypeByValue(value);
-    if (type === 'string' || type === 'array')
-        return type; // 如果是字符串或者数组，直接返回类型作为类型名
-    return returnName;
-};
-/** 处理一下detailMsg最外层和数组的序列对象 */
-var dealResponseData = function (res) {
-    var isArray = false; // 是否为数组对象
-    if (hasProperty(res, 'detailMsg')) {
-        res = res.detailMsg;
-        if (hasProperty(res, 'items') && res.type === 'array') { // 数组的结构专门处理
-            res = res.items;
-            isArray = true;
-        }
-    }
-    return { res: res, isArray: isArray };
-};
-/** 获取文档地址 */
-var getApiLinkAddress = function (project_id, _id) {
-    var _a = global.apiConfig, protocol = _a.protocol, host = _a.host;
-    var baseUrl = "".concat(protocol, "//").concat(host);
-    return "".concat(baseUrl, "/project/").concat(project_id, "/interface/api/").concat(_id);
-};
-/** 获取api最后更新时间 */
-var getUpdateTime = function (time) { return new Date(time * 1000).toLocaleDateString(); };
-/** 导出axios的额外参数 */
-var getAxiosType = function () {
-    var isNeedAxiosType = global.apiConfig.isNeedAxiosType;
-    var axiosType = typeof isNeedAxiosType === 'boolean' && isNeedAxiosType ? '\n   * @param { AxiosRequestConfig } options' : '';
-    return axiosType;
-};
-/** 获取axios 的额外的请求名称 */
-var getAxiosOptionTypeName = function () {
-    var isNeedAxiosType = global.apiConfig.isNeedAxiosType;
-    var axiosTypeName = typeof isNeedAxiosType === 'boolean' && isNeedAxiosType ? 'AxiosRequestConfig' : 'any';
-    return axiosTypeName;
-};
-
-/** 配置注释 */
-var getNoteStringItem$3 = function (item) {
-    return "\n /**\n   * @description ".concat(item.title).concat(getAxiosType(), "\n   * @apiUpdateTime ").concat(new Date(item.up_time * 1000).toLocaleDateString(), "\n   * @link  ").concat(getApiLinkAddress(item.project_id, item._id), "\n   */");
-};
-/** 配置请求主方法 */
-var getMainMethodItem$3 = function (item, project) {
-    var paramsName = ['GET', 'DELETE'].includes(item.method.toUpperCase()) ? 'params' : 'data'; // 按照一般情况处理
-    var requestParams = getAppendRequestParamsJsdoc(item.path, paramsName, true, project);
-    var appendParamsStr = "".concat(paramsName, ", ");
-    return getMainRequestMethodStr(project, item, requestParams, appendParamsStr);
-};
-var handleJsFileString = function (fileBufferStringChunk, item, project) {
-    /** 先配置注释再配置请求主方法 */
-    fileBufferStringChunk.push(getNoteStringItem$3(item));
-    fileBufferStringChunk.push(getMainMethodItem$3(item, project));
-};
-
-/** 配置注释 */
-var getNoteStringItem$2 = function (item) {
-    var _a = global.apiConfig, protocol = _a.protocol, host = _a.host;
-    var project_id = item.project_id;
-    return "\n /**\n   * @description ".concat(item.title, " \n   * @apiUpdateTime ").concat(new Date(item.up_time * 1000).toLocaleDateString(), "\n   * @link ").concat(protocol, "//").concat(host, "/project/").concat(project_id, "/interface/api/").concat(item._id, "\n   */");
-};
-/**
- * 处理传Id的API请求参数
- * @param path 请求路径
- * @param paramsName 传输使用的参数名，配合JsDoc文档数据
- * @returns {string} 函数请求使用的参数表达式
- */
-var getAppendRequestParamsTs = function (path, paramsName, project) {
-    var requestParams = '';
-    path.replace(pathHasParamsRegex, function (_, p1) { return requestParams += "".concat(p1, ": string | number, "); });
-    requestParams = "(".concat(requestParams).concat("".concat(paramsName, ": any, "), "options: ").concat(getAxiosOptionTypeName()).concat(getCustomerParamsStr(project), ")");
-    return requestParams;
-};
-/** 配置请求主方法 */
-var getMainMethodItem$2 = function (item, project) {
-    var paramsName = ['GET', 'DELETE'].includes(item.method.toUpperCase()) ? 'params' : 'data'; // 按照一般情况处理
-    var requestParams = getAppendRequestParamsTs(item.path, paramsName, project);
-    var appendParamsStr = "".concat(paramsName, ", ");
-    return getMainRequestMethodStr(project, item, requestParams, appendParamsStr, 'any');
-};
-var handleTsFileString = function (fileBufferStringChunk, item, project) {
-    /** 先配置注释再配置请求主方法 */
-    fileBufferStringChunk.push(getNoteStringItem$2(item));
-    fileBufferStringChunk.push(getMainMethodItem$2(item, project));
 };
 
 /** 获取不正常序列化的数组对象注释 */
@@ -510,6 +437,57 @@ var getSecondNoteAndName = function (value, addTypeName, type, appendNoteJsdocTy
     return { note: appendNoteJsdocType, name: type };
 };
 
+/** 获取传参名称, TODO，移除params和data,所有的地方都需要额外做处理 */
+var getNoteNameByParamsType = function (item, suffix) {
+    if (!global.apiConfig.isNeedType)
+        return 'any';
+    var requestName = getApiName(item.path, item.method);
+    var ParamsName = getUpperCaseName(requestName);
+    return ParamsName + getUpperCaseName(suffix);
+};
+/** 获取放在Promise<xxx>的名字 */
+var getReturnType = function (returnName, resType) {
+    if (!returnName || !resType)
+        return 'any';
+    if (returnName === 'array')
+        return '[]';
+    return returnName;
+};
+/** 获取返回的参数名 */
+var getReturnName = function (requestName, value) {
+    var returnName = requestName + 'Response';
+    var type = getTypeByValue(value);
+    if (type === 'string' || type === 'array')
+        return type; // 如果是字符串或者数组，直接返回类型作为类型名
+    return returnName;
+};
+/** 处理一下detailMsg最外层和数组的序列对象 */
+var dealResponseData = function (res) {
+    var isArray = false; // 是否为数组对象
+    if (hasProperty(res, 'detailMsg')) {
+        res = res.detailMsg;
+        if (hasProperty(res, 'items') && res.type === 'array') { // 数组的结构专门处理
+            res = res.items;
+            isArray = true;
+        }
+    }
+    return { res: res, isArray: isArray };
+};
+/** 获取文档地址 */
+var getApiLinkAddress = function (project_id, _id) {
+    var _a = global.apiConfig, protocol = _a.protocol, host = _a.host;
+    var baseUrl = "".concat(protocol, "//").concat(host);
+    return "".concat(baseUrl, "/project/").concat(project_id, "/interface/api/").concat(_id);
+};
+/** 获取api最后更新时间 */
+var getUpdateTime = function (time) { return new Date(time * 1000).toLocaleDateString(); };
+/** 获取axios 的额外的请求名称 */
+var getAxiosOptionTypeName = function () {
+    var isNeedAxiosType = global.apiConfig.isNeedAxiosType;
+    var axiosTypeName = typeof isNeedAxiosType === 'boolean' && isNeedAxiosType ? 'AxiosRequestConfig' : 'any';
+    return axiosTypeName;
+};
+
 /** 配置返回注释 */
 var getReturnNoteStringItem$1 = function (item) {
     var body = getLegalJson(item.res_body); // 获取合法的json数据
@@ -578,67 +556,127 @@ var getJsonToJsDocParams$1 = function (json, requestName) {
     });
     return getSuitableJsdocType(requestName, bodyStr, appendNoteJsdocType);
 };
-/** 获取注释的jsDoc类型 */
-var getReqType$1 = function (item, typeName, hasParamsQuery) {
-    if (hasParamsQuery) {
-        return getConfigNoteParams$1(item.req_query, typeName);
-    }
-    else {
-        var body = getLegalJson(item.req_body_other); // 获取合法的json数据
-        return getJsonToJsDocParams$1(body, typeName);
-    }
-};
-/** 获取请求的参数注释和参数名 */
-var getRequestNoteStringItem$1 = function (item, project) {
-    var hasParamsQuery = Array.isArray(item.req_query) && Boolean(item.req_query.length);
-    var typeName = getNoteNameByParamsType(item, project, hasParamsQuery); // 正常object使用的名字
-    var reqType = getReqType$1(item, typeName, hasParamsQuery);
-    return { reqType: reqType, typeName: typeName };
-};
 
-/** 配置地址栏上面的id jsdoc 注释 */
-var getAppendIdNote = function (params) {
-    return params.reduce(function (pre, curr) {
-        var example = curr.example, desc = curr.desc, name = curr.name, _id = curr._id;
-        if (_id)
-            pre += "\n   * @param { number | string } ".concat(name, " ").concat(desc, "  example: ").concat(example, " ");
-        return pre;
-    }, '');
-};
-/** 获取请求注释上的param注释字符串 */
-var getNoteParams = function (reqType, typeName, hasParamsQuery) {
-    if (!typeName.includes('[]') && !reqType)
-        return '';
-    return "\n   * @param { ".concat(typeName, " } ").concat(hasParamsQuery ? 'params' : 'data');
-};
-/** 配置请求注释 */
-var getNoteStringItem$1 = function (item, project) {
-    var hasParamsQuery = Array.isArray(item.req_query) && Boolean(item.req_query.length);
-    var _a = getRequestNoteStringItem$1(item, project), reqType = _a.reqType, typeName = _a.typeName;
-    var _b = getReturnNoteStringItem$1(item), resType = _b.resType, returnNameWithType = _b.returnNameWithType;
-    var idNote = getAppendIdNote(item.req_params);
-    var methodNote = "\n  /**\n   * @description ".concat(item.title).concat(idNote).concat(getNoteParams(reqType, typeName, hasParamsQuery)).concat(getAxiosType(), "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress(item.project_id, item._id), "\n   * @return { Promise<").concat(getReturnType(returnNameWithType, resType), "> }\n   */");
-    return { methodNote: methodNote, typeName: typeName, reqType: reqType, resType: resType };
-};
-/** 配置请求主方法 */
-var getMainMethodItem$1 = function (item, hasNoteData, project) {
-    var hasParamsQuery = Array.isArray(item.req_query) && Boolean(item.req_query.length);
-    var paramsName = hasParamsQuery ? 'params' : 'data';
-    var requestParams = getAppendRequestParamsJsdoc(item.path, paramsName, hasNoteData, project);
-    var appendParamsStr = hasNoteData ? "".concat(paramsName, ", ") : '';
-    return getMainRequestMethodStr(project, item, requestParams, appendParamsStr);
-};
+var ApiItem = /** @class */ (function () {
+    function ApiItem(apiItem, project) {
+        this.apiItem = apiItem;
+        this.project = project;
+        this.paramsArr = [];
+        this.methodStr = '';
+        this.methodNote = '';
+        this.returnData = { name: 'response' };
+    }
+    return ApiItem;
+}());
+
+var JsApiItem = /** @class */ (function (_super) {
+    __extends(JsApiItem, _super);
+    function JsApiItem(apiItem, project) {
+        var _this = _super.call(this, apiItem, project) || this;
+        _this.setParamsArr();
+        _this.setReturnData();
+        _this.setMethodNote();
+        _this.setMethodStr();
+        return _this;
+    }
+    JsApiItem.prototype.getIdsData = function () {
+        var item = this.apiItem;
+        return item.req_params.map(function (item) {
+            return {
+                name: item.name,
+                typeName: 'string | number',
+                description: item.desc,
+                exInclude: true
+            };
+        });
+    };
+    JsApiItem.prototype.getQueryData = function () {
+        var item = this.apiItem;
+        var name = 'params';
+        var typeName = getNoteNameByParamsType(item, name);
+        var typeString = getConfigNoteParams$1(item.req_query, typeName);
+        return { name: name, typeName: typeName, typeString: typeString };
+    };
+    JsApiItem.prototype.getBodyData = function () {
+        var item = this.apiItem;
+        var name = 'data';
+        var typeName = getNoteNameByParamsType(item, name);
+        var body = getLegalJson(item.req_body_other); // 获取合法的json数据
+        var typeString = getJsonToJsDocParams$1(body, typeName);
+        return { name: name, typeName: typeName, typeString: typeString };
+    };
+    JsApiItem.prototype.setReturnData = function () {
+        var item = this.apiItem;
+        var name = 'response';
+        var _a = getReturnNoteStringItem$1(item), typeString = _a.resType, returnNameWithType = _a.returnNameWithType;
+        var typeName = getReturnType(returnNameWithType, typeString);
+        this.returnData = { name: name, typeName: typeName, typeString: typeString };
+    };
+    JsApiItem.prototype.setParamsArr = function () {
+        var item = this.apiItem;
+        this.paramsArr = this.paramsArr.concat(this.getIdsData());
+        var hasParamsQuery = Array.isArray(item.req_query) && Boolean(item.req_query.length);
+        if (hasParamsQuery)
+            this.paramsArr.push(this.getQueryData());
+        var hasParamsBody = item.req_body_other;
+        if (hasParamsBody)
+            this.paramsArr.push(this.getBodyData());
+        var isNeedAxiosType = global.apiConfig.isNeedAxiosType;
+        this.paramsArr.push({
+            name: 'options',
+            typeName: isNeedAxiosType ? getAxiosOptionTypeName() : 'any',
+            exInclude: true
+        });
+    };
+    JsApiItem.prototype.getNoteParams = function () {
+        var noteParamsStr = '';
+        this.paramsArr.forEach(function (item) {
+            if (!global.apiConfig.isNeedType && item.typeName === 'any')
+                return;
+            noteParamsStr += "\n   * @param { ".concat(item.typeName, " } ").concat(item.name);
+        });
+        return noteParamsStr;
+    };
+    JsApiItem.prototype.getReturnParamsStr = function () {
+        if (!global.apiConfig.isNeedType)
+            return '';
+        return "\n   * @return { Promise<".concat(getReturnType(this.returnData.typeName, this.returnData.typeString), "> }");
+    };
+    JsApiItem.prototype.setMethodNote = function () {
+        var item = this.apiItem;
+        this.methodNote = "\n  /**\n   * @description ".concat(item.title).concat(this.getNoteParams(), "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress(item.project_id, item._id)).concat(this.getReturnParamsStr(), "\n   */");
+    };
+    JsApiItem.prototype.getAppendRequestParamsJsdoc = function () {
+        var _this = this;
+        var methodParamsStr = this.paramsArr.reduce(function (pre, cur, index) {
+            return pre += "".concat(cur.name).concat(index === _this.paramsArr.length - 1 ? '' : ', ');
+        }, '');
+        return "(".concat(methodParamsStr).concat(getCustomerParamsStr(this.project), ")");
+    };
+    JsApiItem.prototype.setMethodStr = function () {
+        var requestParams = this.getAppendRequestParamsJsdoc();
+        var appendParamsStr = this.paramsArr.reduce(function (pre, cur) {
+            if (cur.exInclude)
+                return pre;
+            return pre += "".concat(cur.name, ", ");
+        }, '');
+        this.methodStr = getMainRequestMethodStr(this.project, this.apiItem, requestParams, appendParamsStr);
+    };
+    return JsApiItem;
+}(ApiItem));
 var handleJsdocFileString = function (fileBufferStringChunk, item, project, noteStringChunk) {
-    var _a = getNoteStringItem$1(item, project), methodNote = _a.methodNote, reqType = _a.reqType, resType = _a.resType;
-    var hasNoteData = Boolean(reqType);
-    var methodStr = getMainMethodItem$1(item, hasNoteData, project);
+    var apiItem = new JsApiItem(item, project);
     /** 先配置注释再配置请求主方法 */
-    fileBufferStringChunk.push(methodNote);
-    fileBufferStringChunk.push(methodStr);
-    if (reqType)
-        noteStringChunk.push(reqType);
-    if (resType)
-        noteStringChunk.push(resType);
+    fileBufferStringChunk.push(apiItem.methodNote);
+    fileBufferStringChunk.push(apiItem.methodStr);
+    if (global.apiConfig.isNeedType) {
+        apiItem.paramsArr.forEach(function (item) {
+            if (item.typeString)
+                noteStringChunk.push(item.typeString);
+        });
+        if (apiItem.returnData.typeString)
+            noteStringChunk.push(apiItem.returnData.typeString);
+    }
 };
 
 /** 配置返回注释 */
@@ -714,70 +752,102 @@ var getJsonToJsDocParams = function (json, requestName) {
     });
     return getSuitableTsInterface(requestName, bodyStr, appendNoteJsdocType);
 };
-/** 获取注释的jsDoc类型 */
-var getReqType = function (item, typeName, hasParamsQuery) {
-    if (hasParamsQuery) {
-        return getConfigNoteParams(item.req_query, typeName);
-    }
-    else {
-        var body = getLegalJson(item.req_body_other); // 获取合法的json数据
-        return getJsonToJsDocParams(body, typeName);
-    }
-};
-/** 获取请求的参数注释和参数名 */
-var getRequestNoteStringItem = function (item, project) {
-    var hasParamsQuery = Array.isArray(item.req_query) && Boolean(item.req_query.length);
-    var typeName = getNoteNameByParamsType(item, project, hasParamsQuery); // 正常object使用的名字
-    var reqType = getReqType(item, typeName, hasParamsQuery);
-    return { reqType: reqType, typeName: typeName };
-};
 
-/** 获取请求上参数ts 类型名称 */
-var getParamsTypeName = function (reqType, typeName) {
-    if (!typeName.includes('[]') && !reqType)
-        return 'any';
-    else
-        return typeName;
-};
-/** 配置请求注释 */
-var getNoteStringItem = function (item) {
-    return "\n  /**\n   * @description ".concat(item.title, "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress(item.project_id, item._id), "\n   */");
-};
-/**
- * 处理传Id的API请求参数
- * @param path 请求路径
- * @param paramsName 传输使用的参数名，配合JsDoc文档数据，Get请求使用params, Post, Put, Delete 请求使用data
- * @returns {string} 函数请求使用的参数表达式
- */
-var getAppendRequestParamsTsType = function (path, paramsName, hasNoteData, requestParamsType, project) {
-    var requestParams = '';
-    path.replace(pathHasParamsRegex, function (_, p1) { return requestParams += "".concat(p1, ": string | number, "); });
-    requestParams = "(".concat(requestParams).concat(hasNoteData ? "".concat(paramsName, "?: ").concat(requestParamsType, ", ") : '', "options?: ").concat(getAxiosOptionTypeName()).concat(getCustomerParamsStr(project), ")");
-    return requestParams;
-};
-/** 配置请求主方法 */
-var getMainMethodItem = function (item, hasNoteData, project, requestParamsType, returnParamsType) {
-    var hasParamsQuery = Array.isArray(item.req_query) && Boolean(item.req_query.length);
-    var paramsName = hasParamsQuery ? 'params' : 'data';
-    var requestParams = getAppendRequestParamsTsType(item.path, paramsName, hasNoteData, requestParamsType, project);
-    var appendParamsStr = hasNoteData ? "".concat(paramsName, ", ") : '';
-    return getMainRequestMethodStr(project, item, requestParams, appendParamsStr, returnParamsType);
-};
+var TsApiItem = /** @class */ (function (_super) {
+    __extends(TsApiItem, _super);
+    function TsApiItem(apiItem, project) {
+        var _this = _super.call(this, apiItem, project) || this;
+        _this.setParamsArr();
+        _this.setReturnData();
+        _this.setMethodNote();
+        _this.setMethodStr();
+        return _this;
+    }
+    TsApiItem.prototype.getIdsData = function () {
+        var item = this.apiItem;
+        return item.req_params.map(function (item) {
+            return {
+                name: item.name,
+                typeName: 'string | number',
+                description: item.desc,
+                exInclude: true
+            };
+        });
+    };
+    TsApiItem.prototype.getQueryData = function () {
+        var item = this.apiItem;
+        var name = 'params';
+        var typeName = getNoteNameByParamsType(item, name);
+        var typeString = getConfigNoteParams(item.req_query, typeName);
+        return { name: name, typeName: typeName, typeString: typeString };
+    };
+    TsApiItem.prototype.getBodyData = function () {
+        var item = this.apiItem;
+        var name = 'data';
+        var typeName = getNoteNameByParamsType(item, name);
+        var body = getLegalJson(item.req_body_other); // 获取合法的json数据
+        var typeString = getJsonToJsDocParams(body, typeName);
+        return { name: name, typeName: typeName, typeString: typeString };
+    };
+    TsApiItem.prototype.setReturnData = function () {
+        var item = this.apiItem;
+        var name = 'response';
+        var _a = getReturnNoteStringItem(item), typeString = _a.resType, returnNameWithType = _a.returnNameWithType;
+        var typeName = getReturnType(returnNameWithType, typeString);
+        this.returnData = { name: name, typeName: typeName, typeString: typeString };
+    };
+    TsApiItem.prototype.setParamsArr = function () {
+        var item = this.apiItem;
+        this.paramsArr = this.paramsArr.concat(this.getIdsData());
+        var hasParamsQuery = Array.isArray(item.req_query) && Boolean(item.req_query.length);
+        if (hasParamsQuery)
+            this.paramsArr.push(this.getQueryData());
+        var hasParamsBody = item.req_body_other;
+        if (hasParamsBody)
+            this.paramsArr.push(this.getBodyData());
+        this.paramsArr.push({
+            name: 'options',
+            typeName: getAxiosOptionTypeName(),
+            exInclude: true
+        });
+    };
+    TsApiItem.prototype.getAppendRequestParamsTsType = function () {
+        var _this = this;
+        var methodParamsStr = this.paramsArr.reduce(function (pre, cur, index) {
+            var typeStr = !global.apiConfig.isNeedType ? '' : "?: ".concat(cur.typeName);
+            return pre += "".concat(cur.name).concat(typeStr).concat(index === _this.paramsArr.length - 1 ? '' : ', ');
+        }, '');
+        return "(".concat(methodParamsStr).concat(getCustomerParamsStr(this.project), ")");
+    };
+    TsApiItem.prototype.setMethodNote = function () {
+        var item = this.apiItem;
+        this.methodNote = "\n  /**\n   * @description ".concat(item.title, "\n   * @apiUpdateTime ").concat(getUpdateTime(item.up_time), "\n   * @link ").concat(getApiLinkAddress(item.project_id, item._id), "\n   */");
+    };
+    TsApiItem.prototype.setMethodStr = function () {
+        var item = this.apiItem;
+        var requestParams = this.getAppendRequestParamsTsType();
+        var appendParamsStr = this.paramsArr.reduce(function (pre, cur) {
+            if (cur.exInclude)
+                return pre;
+            return pre += "".concat(cur.name, ", ");
+        }, '');
+        this.methodStr = getMainRequestMethodStr(this.project, item, requestParams, appendParamsStr, this.returnData.typeName);
+    };
+    return TsApiItem;
+}(ApiItem));
 var handleTsTypeFileString = function (fileBufferStringChunk, item, project, noteStringChunk) {
-    var _a = getRequestNoteStringItem(item, project), reqType = _a.reqType, typeName = _a.typeName;
-    var _b = getReturnNoteStringItem(item), resType = _b.resType, returnNameWithType = _b.returnNameWithType;
-    var methodNote = getNoteStringItem(item);
-    var requestParamsType = getParamsTypeName(reqType, typeName);
-    var returnParamsType = getReturnType(returnNameWithType, resType);
-    var hasNoteData = Boolean(reqType);
-    var methodStr = getMainMethodItem(item, hasNoteData, project, requestParamsType, returnParamsType);
+    var apiItem = new TsApiItem(item, project);
     /** 先配置注释再配置请求主方法 */
-    fileBufferStringChunk.push(methodNote);
-    fileBufferStringChunk.push(methodStr);
-    if (reqType)
-        noteStringChunk.push(reqType);
-    if (resType)
-        noteStringChunk.push(resType);
+    fileBufferStringChunk.push(apiItem.methodNote);
+    fileBufferStringChunk.push(apiItem.methodStr);
+    if (global.apiConfig.isNeedType) {
+        apiItem.paramsArr.forEach(function (item) {
+            if (item.typeString)
+                noteStringChunk.push(item.typeString);
+        });
+        if (apiItem.returnData.typeString)
+            noteStringChunk.push(apiItem.returnData.typeString);
+    }
 };
 
 /** 设置api文件头部文件 */
@@ -851,11 +921,6 @@ var getSavePath = function (recommendName, project, fileConfig, nameChunk) {
     nameChunk.set(fileName, FileNameTimes || 1);
     return path;
 };
-/** 根据文件类型获取生成简介版本的方法名 */
-var generateSimpleBufferStringByVersion = function (version) {
-    var configFunctionName = version === 'ts' ? handleTsFileString : handleJsFileString;
-    return configFunctionName;
-};
 /** 根据文件类型获取生成智能提示版本的方法名 */
 var generateTypeBufferStringByVersion = function (version) {
     var configFunctionName = version === 'ts' ? handleTsTypeFileString : handleJsdocFileString;
@@ -893,19 +958,13 @@ var getMaxTimesObjectKeyName = function (obj, hasSaveNames) {
  */
 var getApiFileConfig = function (item, project) {
     var list = item.list;
-    var isNeedType = global.apiConfig.isNeedType;
     var fileBufferStringChunk = configFileHead(item); // 单个API文件流
     var noteStringChunk = ['\n']; // 存储Jsdoc注释的容器
     list.forEach(function (item) {
         if (project.hideUnDoneApi && item.status === 'undone')
             return;
         item.path = getValidApiPath(item.path); // 处理一些后台在地址栏上加参数的问题
-        if (isNeedType) {
-            generateTypeBufferStringByVersion(global.apiConfig.version)(fileBufferStringChunk, item, project, noteStringChunk);
-        }
-        else {
-            generateSimpleBufferStringByVersion(global.apiConfig.version)(fileBufferStringChunk, item, project);
-        }
+        generateTypeBufferStringByVersion(global.apiConfig.version)(fileBufferStringChunk, item, project, noteStringChunk);
     });
     return { fileBufferStringChunk: fileBufferStringChunk, noteStringChunk: noteStringChunk };
 };

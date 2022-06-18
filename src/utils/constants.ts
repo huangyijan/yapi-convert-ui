@@ -2,7 +2,7 @@ import demo from '../../static/demo.json'
 
 export const config = {
   userId: 466,
-  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjQ2NiwiaWF0IjoxNjU0NDE3MzM1LCJleHAiOjE2NTUwMjIxMzV9.hfllQdMiez0-S95PABCkUDBZfnNQD9T4B-ryd_Avn98",
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjQ2NiwiaWF0IjoxNjU1MzY4ODE4LCJleHAiOjE2NTU5NzM2MTh9.SAN287WEvT6EBiWMeSDxxh45w28h54ZodV1lBcEfnVQ",
   yapiURL: 'http://yapi.miguatech.com/project/445/interface/api',
   version: 'js',
   isNeedType: true,

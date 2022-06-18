@@ -42,7 +42,7 @@
               <template #default="scope">
                 <el-checkbox class="menu-checkbox" v-for="menu in scope.row.menus" :key="menu.catId" :label="menu" :checked="!!scope.row.group.find(item => item.catId === menu.catId)"
                   @change="checkStatus => menuChange(checkStatus, menu, scope.row)">{{
-                  menu.name
+                      menu.name
                   }}</el-checkbox>
               </template>
             </el-table-column>
@@ -90,7 +90,7 @@
               <div>
                 <el-icon class="header-icon" :size="20">
                   <Folder />
-                </el-icon>&nbsp;API输出路径：{{ item.savePath}}
+                </el-icon>&nbsp;API输出路径：{{ item.savePath }}
               </div>
               <el-icon class="edit-icon" :size="20" @click.stop="editChange(item, index)">
                 <IconEdit />
@@ -105,7 +105,7 @@
       </el-collapse>
     </el-col>
 
-    <el-drawer :with-header="false" destroy-on-close v-model="list.showCode"  direction="rtl" size="70%">
+    <el-drawer :with-header="false" destroy-on-close v-model="list.showCode" direction="rtl" size="70%">
       <Code id="codeWrap" :code="list.item.saveFileBuffer"></Code>
     </el-drawer>
   </el-row>
@@ -138,7 +138,7 @@ const activeNames = ref([0])
 const editChange = (item, index) => {
   list.item = item
   list.showCode = !list.showCode
-  
+
 }
 
 /** 生成没有注释的API文件，注释有文档链接，可以直接跳转 */
@@ -215,7 +215,7 @@ const expandChange = (row: ProjectConfig) => {
 
 /** 拷贝配置 */
 const copy = () => {
-  const config = JSON.parse(JSON.stringify(form)) 
+  const config = JSON.parse(JSON.stringify(form))
   config.projects.forEach(item => {
     delete item.data
     delete item.menus
@@ -265,12 +265,16 @@ const initMenu = () => {
     const MenuUrl = `${baseUrl}/api/interface/list_menu?project_id=${project.projectId}`
     request(MenuUrl).then(menuStr => {
       const { data } = JSON.parse(menuStr)
+      if (!data) return ElMessage.error('登录已经过期，请重新填写token和userId')
       project.menus = data.map(item => {
         return { catId: item._id, name: item.name }
       })
       list.loading = false
 
     })
+      .finally(() => {
+        list.loading = false
+      })
       .catch(err => {
         ElMessage.error(err.toString())
       })
@@ -287,8 +291,6 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-
-
 .main-row {
   width: 100vw;
   height: calc(100vh - 60px);
@@ -317,19 +319,23 @@ onMounted(() => {
     padding: 10px;
     height: 100%;
     overflow: auto;
+
     .title-collapse {
       display: flex;
       align-items: center;
       justify-content: space-between;
       width: 100%;
+
       div:nth-child(1) {
         display: flex;
         align-items: center;
       }
+
       .edit-icon {
         margin-right: 10px;
       }
     }
+
     .code-collapse {
       width: 95%;
     }
